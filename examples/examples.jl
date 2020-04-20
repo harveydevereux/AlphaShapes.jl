@@ -24,4 +24,4 @@ p2 = scatter(X[:,1],X[:,2],label="",aspect_ratio=:equal)
 plot!(title="Optimum Alpha Shape Triangulation")
 
 p = plot(p1,p2,size=(900,300))
-savefig(p,"Example.pdf")
+savefig(p,"Example.png")
