@@ -4,7 +4,7 @@ module AlphaShapes
     import BlackBoxOptim.best_candidate
     import LinearAlgebra.norm
 
-    export AlphaShape, basic_triangulation_vertices
+    export AlphaShape, basic_triangulation_vertices, AlphaShapeArea
 
     function CircumCircle(trig_points)
         """
