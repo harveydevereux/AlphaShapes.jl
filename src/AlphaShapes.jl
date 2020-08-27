@@ -7,7 +7,7 @@ module AlphaShapes
 
     export AlphaShape, AlphaShapeArea
 
-    function CayleyMenger(points)
+    function CayleyMenger(points::Array{Float64,2})::Array{Float64}
         """
             CayleyMenger
 
@@ -38,7 +38,7 @@ module AlphaShapes
 
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
-    function SimplexVolume(points)
+    function SimplexVolume(points::Array{Float64,2})::Float64
 
         CM = CayleyMenger(points)
         n = size(CM,1)-2
@@ -51,7 +51,7 @@ module AlphaShapes
     Find the centre and radius of the circumsphere of a simplex
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
-    function SimplexCircumSphere(points)
+    function SimplexCircumSphere(points::Array{Float64,2})::Tuple{Array{Float64,1},Float64}
         CM = CayleyMenger(points)
         cminv = inv(CM)
         R = sqrt(cminv[1,1]/(-2.0))
@@ -67,20 +67,20 @@ module AlphaShapes
     Find the centre and radius of the circumsphere of a simplex
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
-    function SimplexCircumRadiusSquared(points)
+    function SimplexCircumRadiusSquared(points::Array{Float64,2})::Float64
         CM = CayleyMenger(points)
         cminv = inv(CM)
         return cminv[1,1]/(-2.0)
     end
 
-    function VertexInTriangle(x,T)
+    function VertexInTriangle(x::Array{Float64,1},T::Array{Float64,2})::Bool
         if x == T[1,:] || x == T[2,:] || x == T[3,:]
             return true
         else
             return false
         end
     end
-    function VertexInTriangulation(x,T)
+    function VertexInTriangulation(x::Array{Float64,1},T::Array{Float64,3})::Bool
         for i in 1:size(T,1)
             if VertexInTriangle(x,T[i,:,:])
                 return true
@@ -88,7 +88,7 @@ module AlphaShapes
         end
         return false
     end
-    function AllPointsInAlphaShape(X,A)
+    function AllPointsInAlphaShape(X::Array{Float64,2},A::Array{Float64,3})::Bool
         for i in 1:size(X,1)
             if VertexInTriangulation(X[i,:],A) == false
                 return false
@@ -97,7 +97,7 @@ module AlphaShapes
         return true
     end
 
-    function AlphaShapeVolume(A)
+    function AlphaShapeVolume(A::Array{Float64,3})::Float64
         area = 0.0
         for t in 1:size(A,1)
             area += SimplexVolume(A[t,:,:])
@@ -105,7 +105,7 @@ module AlphaShapes
         return area
     end
 
-    function GetTriangulation(points)
+    function GetTriangulation(points::Array{Float64,2})::Array{Float64,3}
         tess = delaunay(permutedims(points,(2,1)))
         Triangles = zeros(size(tess,2),size(tess,1),size(tess,1)-1)
         for i in 1:size(tess,2)
@@ -116,7 +116,9 @@ module AlphaShapes
         return Triangles
     end
 
-    function FindAlpha(X;search=(0.0, 10.0),MaxSteps=100)
+    function FindAlpha(X::Array{Float64,2};
+        search::Tuple{Float64,Float64}=(0.0, 10.0),
+        MaxSteps::Int=100)::Float64
         objective = function(α)
             α = α[1]
             A = AlphaShape(X,α=α);
@@ -134,7 +136,9 @@ module AlphaShapes
         return best_candidate(res)[1]
     end
 
-    function AlphaShape(X;α=nothing,search=(0.0, 10.0),MaxSteps=100)
+    function AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
+        search::Tuple{Float64,Float64}=(0.0, 10.0),
+        MaxSteps::Int=100)::Array{Float64,3}
         """
         Find the alpha shape corresponding to the 2D array of points
         X: [npoints,2], and the α value α.

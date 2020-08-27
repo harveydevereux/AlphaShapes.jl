@@ -3,11 +3,23 @@
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
+[[BinDeps]]
+deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
+git-tree-sha1 = "46cf2c1668ad07aba5a9d331bdeea994a1f13856"
+uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
+version = "1.0.1"
+
 [[BlackBoxOptim]]
 deps = ["CPUTime", "Compat", "Distributed", "Distributions", "LinearAlgebra", "Printf", "Random", "SpatialIndexing", "StatsBase"]
 git-tree-sha1 = "da5cfcc08d24a43fa4e3ad67f565f17838e26fca"
 uuid = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
 version = "0.5.0"
+
+[[CMake]]
+deps = ["BinDeps"]
+git-tree-sha1 = "50a8b41d2c562fccd9ab841085fc7d1e2706da82"
+uuid = "631607c0-34d2-5d66-819e-eb0f9aa2061a"
+version = "1.2.0"
 
 [[CPUTime]]
 git-tree-sha1 = "2dcc50ea6a0a1ef6440d6eecd0fe3813e5671f45"
@@ -89,6 +101,12 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
+[[MiniQhull]]
+deps = ["CMake", "Libdl", "Qhull_jll"]
+git-tree-sha1 = "7a41a6e3d4e924e212cbc949fca3d41544ef09d5"
+uuid = "978d7f02-9e05-4691-894f-ae31a51d76ca"
+version = "0.2.0"
+
 [[Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "ed61674a0864832495ffe0a7e889c0da76b0f4c8"
@@ -122,6 +140,12 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 [[Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[[Qhull_jll]]
+deps = ["Libdl", "Pkg"]
+git-tree-sha1 = "585989201bf8741e165ae52df54de79c5299daa7"
+uuid = "784f63db-0788-585a-bace-daefebcd302b"
+version = "2019.1.0+2"
 
 [[QuadGK]]
 deps = ["DataStructures", "LinearAlgebra"]
@@ -207,6 +231,12 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[URIParser]]
+deps = ["Unicode"]
+git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
+uuid = "30578b45-9adc-5946-b283-645ec420af67"
+version = "0.4.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
