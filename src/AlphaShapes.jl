@@ -1,26 +1,76 @@
 module AlphaShapes
-    import Triangle.basic_triangulation_vertices
-    import BlackBoxOptim.bboptimize
-    import BlackBoxOptim.best_candidate
-    import LinearAlgebra.norm
+    import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
+    import Distances.pairwise, Distances.Euclidean
+    import LinearAlgebra.det, LinearAlgebra.inv
 
-    export AlphaShape, basic_triangulation_vertices, AlphaShapeArea
+    using MiniQhull
 
-    function CircumCircle(trig_points)
+    export AlphaShape, AlphaShapeArea
+
+    function CayleyMenger(points)
         """
-        Fairly efficiently compute the circumcircle for a given
-        triangle, vertices are ordered as [vertex number, dimension]
-        in 2D space
-        """
-        Bp = trig_points[2,:]-trig_points[1,:]
-        Cp = trig_points[3,:]-trig_points[1,:]
-        Dp = 2.0*(Bp[1]*Cp[2]-Bp[2]*Cp[1])
+            CayleyMenger
 
-        B2 = Bp[1]^2. + Bp[2]^2.
-        C2 = Cp[1]^2. + Cp[2]^2.
-        Ux = (Cp[2]*(B2)-Bp[2]*(C2)) / Dp
-        Uy = (Bp[1]*(C2)-Cp[1]*(B2)) / Dp
-        return [Ux,Uy] .+ trig_points[1,:], norm([Ux,Uy])
+        Compute the Cayley-Menger matrix from squared
+        distances dij^2.
+
+        e.g for a 2-d triangle
+
+         0    1      1      1
+         1    0      d12^2  d13^2
+         1    d21^2  0      d23^2
+         1    d32^2  d32^2    0
+        """
+        d = pairwise(Euclidean(),points,dims=1)
+        n = size(points,1)
+        CM = ones(n+1,n+1)
+        CM[2:end,2:end] = d.^2.0
+        CM[end,end] = 0.0
+        CM[1,1] = 0.0
+        return CM
+    end
+
+    """
+        SimplexVolume
+
+    Calculate the volume of a simplex using the
+    Cayley Menger matrix
+
+    https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
+    """
+    function SimplexVolume(points)
+
+        CM = CayleyMenger(points)
+        n = size(CM,1)-2
+        return sqrt(((-1.0)^(n+1))/((2.0^n)*factorial(n)^2.0)*det(CM))
+    end
+
+    """
+        SimplexCircumSphere
+
+    Find the centre and radius of the circumsphere of a simplex
+    https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
+    """
+    function SimplexCircumSphere(points)
+        CM = CayleyMenger(points)
+        cminv = inv(CM)
+        R = sqrt(cminv[1,1]/(-2.0))
+        # convert for barycentric to cartesian coordinates
+        λ = cminv[1,2:end]
+        c = (λ'*points)[1,:]
+        return c,R
+    end
+
+    """
+        SimplexCircumSphere
+
+    Find the centre and radius of the circumsphere of a simplex
+    https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
+    """
+    function SimplexCircumRadiusSquared(points)
+        CM = CayleyMenger(points)
+        cminv = inv(CM)
+        return cminv[1,1]/(-2.0)
     end
 
     function VertexInTriangle(x,T)
@@ -32,7 +82,7 @@ module AlphaShapes
     end
     function VertexInTriangulation(x,T)
         for i in 1:size(T,1)
-            if VertexInTriangle(x,T[i])
+            if VertexInTriangle(x,T[i,:,:])
                 return true
             end
         end
@@ -46,19 +96,24 @@ module AlphaShapes
         end
         return true
     end
-    function TriangleArea(T)
-        a = norm(T[2,:]-T[1,:])
-        b = norm(T[3,:]-T[2,:])
-        c = norm(T[1,:]-T[3,:])
-        s = (a+b+c)/2.
-        return sqrt(s*(s-a)*(s-b)*(s-c))
-    end
-    function AlphaShapeArea(A)
-        Area = 0.0
-        for i in 1:size(A,1)
-            Area += TriangleArea(A[i])
+
+    function AlphaShapeVolume(A)
+        area = 0.0
+        for t in 1:size(A,1)
+            area += SimplexVolume(A[t,:,:])
         end
-        return Area
+        return area
+    end
+
+    function GetTriangulation(points)
+        tess = delaunay(permutedims(points,(2,1)))
+        Triangles = zeros(size(tess,2),size(tess,1),size(tess,1)-1)
+        for i in 1:size(tess,2)
+            for j in 1:size(tess,1)
+                Triangles[i,j,:] = points[tess[j,i],:]
+            end
+        end
+        return Triangles
     end
 
     function FindAlpha(X;search=(0.0, 10.0),MaxSteps=100)
@@ -66,7 +121,7 @@ module AlphaShapes
             α = α[1]
             A = AlphaShape(X,α=α);
             t = AllPointsInAlphaShape(X,A)
-            o =  AlphaShapeArea(A)
+            o =  AlphaShapeVolume(A)
             # minimise the are but if not all points are
             # included then set to extreme value
             if t
@@ -89,12 +144,13 @@ module AlphaShapes
         area (minimise) subject to all points in X being included in the
         alpha shape triangulation.
         """
-        T = basic_triangulation_vertices(X)
+        T = GetTriangulation(X)
         if α == nothing
             println("Finding the optimum α value...\n")
             α = FindAlpha(X;search=search,MaxSteps=MaxSteps)
         end
-        A = [CircumCircle(T[i])[2] < α for i in 1:size(T,1)]
-        return T[A.==1]
+        α2 = α^2.0
+        A = [SimplexCircumRadiusSquared(T[i,:,:]) < α2 for i in 1:size(T,1)]
+        return T[A.==1,:,:]
     end
 end # module AlphaShapes

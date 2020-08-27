@@ -1,10 +1,11 @@
 using AlphaShapes
-include("../src/utils.jl")
-using Plots
-using Main.AlphaShapes
-using LinearAlgebra
+using Test
 using Random
+using LinearAlgebra
+using Plots
 Random.seed!(31415926535897)
+include("../src/utils.jl")
+
 
 N = 1000
 r1 = 0.75
@@ -27,3 +28,15 @@ plot!(title="Optimum Alpha Shape Triangulation")
 
 p = plot(p1,p2,size=(900,300))
 savefig(p,"Example.png")
+
+AlphaShape(X;α=nothing,search=(0.0, 10.0),MaxSteps=100)
+
+@testset "Test Alpha Shape 2D" begin
+   N = 1000
+   r1 = 0.75
+   r2 = 2.0
+   X = randn(N,2)
+   ind = [((norm(X[i,:])>r1) + (norm(X[i,:])<r2)) == 2 for i in 1:size(X,1)]
+   X = X[ind.==true,:]
+   AlphaShape(X;α=nothing,search=(0.0, 10.0),MaxSteps=100)
+end
