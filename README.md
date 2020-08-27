@@ -1,5 +1,5 @@
 # AlphaShapes.jl
-Basic implementation of alpha shapes in 2D
+Basic implementation of alpha shapes in 2+ dimensions
 | Travis | CodeCov |
 |-------|----------|
 | [![Build Status](https://travis-ci.com/harveydevereux/AlphaShapes.jl.svg?branch=master)](https://travis-ci.com/harveydevereux/AlphaShapes.jl)|[![codecov](https://codecov.io/gh/harveydevereux/AlphaShapes.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/harveydevereux/AlphaShapes.jl)|
