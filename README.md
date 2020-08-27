@@ -32,7 +32,7 @@ To choose an alpha value simply pass it
 A = AlphaShape(X,α=1.0)
 ```
 
-### Uses: 
+### Deps: 
 - [MiniQhull.jl](https://github.com/gridap/MiniQhull.jl) for Delaunay Triangulations in any dimension
 - [BlackBoxOptim.jl](https://github.com/robertfeldt/BlackBoxOptim.jl) for alpha value optimisation
 
