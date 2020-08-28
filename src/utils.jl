@@ -11,5 +11,5 @@ function Ellipse(n;a=1,b=1,max=2π,θ=0,center=[0.0,0.0])
 end
 
 function PackingFraction(X,ParticleArea)
-    return (size(X,2)*ParticleArea) ./ AlphaShapeArea(AlphaShape(X,FindAlpha(X)))
+    return (size(X,2)*ParticleArea) ./ Alphashapes.AlphaShapeVolume(AlphaShape(X,FindAlpha(X)))
 end

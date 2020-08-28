@@ -15,7 +15,7 @@ X = X[ind.==true,:]
 # normally distributed points with a whole in the middle
 p1 = scatter(X[:,1],X[:,2],label="",aspect_ratio=:equal)
 
-T = AlphaShapes.GetTriangulation(X);
+T = AlphaShapes.GetDelaunayTriangulation(X);
 p1 = scatter(X[:,1],X[:,2],label="",aspect_ratio=:equal)
 [DrawTri!(T[i,:,:]) for i in 1:size(T,1)]
 plot!(title="Delaunay Triangulation")

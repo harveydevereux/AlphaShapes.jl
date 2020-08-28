@@ -5,22 +5,29 @@ module AlphaShapes
 
     using MiniQhull
 
-    export AlphaShape, AlphaShapeArea
+    export AlphaShape, AlphaShapeVolume
 
-    function CayleyMenger(points::Array{Float64,2})::Array{Float64}
-        """
-            CayleyMenger
+    """
+        CayleyMenger
 
-        Compute the Cayley-Menger matrix from squared
-        distances dij^2.
+    Compute the Cayley-Menger matrix from squared
+    distances dij^2.
 
-        e.g for a 2-d triangle
+    https://mathworld.wolfram.com/Cayley-MengerDeterminant.html
 
-         0    1      1      1
+    For a 2-d triangle the following example would symbolically
+    represent the matrix for points x1, x2, and x3 where dij^2
+    is the square Euclidean distance between i and j
+    Example
+```julia-repl
+julia>:([0    1      1      1
          1    0      d12^2  d13^2
          1    d21^2  0      d23^2
-         1    d32^2  d32^2    0
-        """
+         1    d32^2  d32^2    0])
+:([0 1 1 1; 1 0 d12 ^ 2 d13 ^ 2; 1 d21 ^ 2 0 d23 ^ 2; 1 d32 ^ 2 d32 ^ 2 0])
+```
+    """
+    function CayleyMenger(points::Array{Float64,2})::Array{Float64}
         d = pairwise(Euclidean(),points,dims=1)
         n = size(points,1)
         CM = ones(n+1,n+1)
@@ -97,6 +104,11 @@ module AlphaShapes
         return true
     end
 
+    """
+        AlphaShapeVolume(A::Array{Float64,3})
+
+    return the sum of volumes of all simplices in the alpha shapes A
+    """
     function AlphaShapeVolume(A::Array{Float64,3})::Float64
         area = 0.0
         for t in 1:size(A,1)
@@ -105,7 +117,13 @@ module AlphaShapes
         return area
     end
 
-    function GetTriangulation(points::Array{Float64,2})::Array{Float64,3}
+    """
+        GetDelaunayTriangulation(points::Array{Float64,2})::Array{Float64,3}
+
+    Wrap MiniQhull.jl's delaunay to get a delaunay triangualation in any
+    dimension
+    """
+    function GetDelaunayTriangulation(points::Array{Float64,2})::Array{Float64,3}
         tess = delaunay(permutedims(points,(2,1)))
         Triangles = zeros(size(tess,2),size(tess,1),size(tess,1)-1)
         for i in 1:size(tess,2)
@@ -116,6 +134,14 @@ module AlphaShapes
         return Triangles
     end
 
+    """
+        FindAlpha(X::Array{Float64,2};
+            search::Tuple{Float64,Float64}=(0.0, 10.0),
+            MaxSteps::Int=100)::Float64
+
+    Use BlackBocOptim to find the optimal alpha value (volume minimiser which cotains all
+    points from the input).
+    """
     function FindAlpha(X::Array{Float64,2};
         search::Tuple{Float64,Float64}=(0.0, 10.0),
         MaxSteps::Int=100)::Float64
@@ -136,19 +162,23 @@ module AlphaShapes
         return best_candidate(res)[1]
     end
 
+    """
+        AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
+            search::Tuple{Float64,Float64}=(0.0, 10.0),
+            MaxSteps::Int=100)::Array{Float64,3}
+
+    Find the alpha shape corresponding to the 2D array of points
+    X: [npoints,2], and the α value α.
+
+    If α == nothing then a search over the range of values search is done
+    to find the best value. The optimisation objective is the alpha shape
+    area (minimise) subject to all points in X being included in the
+    alpha shape triangulation.
+    """
     function AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
         search::Tuple{Float64,Float64}=(0.0, 10.0),
         MaxSteps::Int=100)::Array{Float64,3}
-        """
-        Find the alpha shape corresponding to the 2D array of points
-        X: [npoints,2], and the α value α.
-
-        If α == nothing then a search over the range of values search is done
-        to find the best value. The optimisation objective is the alpha shape
-        area (minimise) subject to all points in X being included in the
-        alpha shape triangulation.
-        """
-        T = GetTriangulation(X)
+        T = GetDelaunayTriangulation(X)
         if α == nothing
             println("Finding the optimum α value...\n")
             α = FindAlpha(X;search=search,MaxSteps=MaxSteps)
