@@ -124,7 +124,7 @@ module AlphaShapes
             A = AlphaShape(X,α=α);
             t = AllPointsInAlphaShape(X,A)
             o =  AlphaShapeVolume(A)
-            # minimise the are but if not all points are
+            # minimise the area but if not all points are
             # included then set to extreme value
             if t
                 return o
