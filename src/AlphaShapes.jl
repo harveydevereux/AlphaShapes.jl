@@ -1,7 +1,7 @@
 module AlphaShapes
     import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
     import Distances.pairwise, Distances.Euclidean
-    import LinearAlgebra.det, LinearAlgebra.inv
+    import LinearAlgebra.det, LinearAlgebra.inv, LinearAlgebra.norm
 
     using MiniQhull
 
@@ -131,6 +131,9 @@ julia>:([0    1      1      1
                 view(Triangles, :, i, j) .= view(points, :, tess[i, j])
             end
         end
+	if indices
+	    return Triangles,tess
+	end
         return Triangles
     end
 
@@ -198,4 +201,7 @@ julia>:([0    1      1      1
         end
         return T[:,:,A]
     end
+
+	include("utils.jl")
+	include("Density.jl")
 end # module AlphaShapes
