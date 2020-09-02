@@ -123,7 +123,7 @@ julia>:([0    1      1      1
     Wrap MiniQhull.jl's delaunay to get a delaunay triangualation in any
     dimension
     """
-    function GetDelaunayTriangulation(points::Array{Float64,2})::Array{Float64,3}
+    function GetDelaunayTriangulation(points::Array{Float64,2},indices=false)
         tess = delaunay(permutedims(points,(2,1)))
         Triangles = zeros(size(tess,2),size(tess,1),size(tess,1)-1)
         for i in 1:size(tess,2)
@@ -131,6 +131,9 @@ julia>:([0    1      1      1
                 Triangles[i,j,:] = points[tess[j,i],:]
             end
         end
+	if indices
+	    return Triangles,tess
+	end
         return Triangles
     end
 
@@ -187,4 +190,7 @@ julia>:([0    1      1      1
         A = [SimplexCircumRadiusSquared(T[i,:,:]) < α2 for i in 1:size(T,1)]
         return T[A.==1,:,:]
     end
+
+	include("utils.jl")
+	include("Density.jl")
 end # module AlphaShapes
