@@ -1,7 +1,7 @@
 module AlphaShapes
     import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
     import Distances.pairwise, Distances.Euclidean
-    import LinearAlgebra.det, LinearAlgebra.inv
+    import LinearAlgebra.det, LinearAlgebra.inv, LinearAlgebra.norm
 
     using MiniQhull
 
