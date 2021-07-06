@@ -1,12 +1,32 @@
 module AlphaShapes
-    import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
-    import Distances.pairwise, Distances.Euclidean
-    import LinearAlgebra.det, LinearAlgebra.inv
+
+    using Distributed
+
+    @everywhere import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
+    @everywhere import Distances.pairwise, Distances.Euclidean
+    @everywhere import LinearAlgebra.det, LinearAlgebra.inv, LinearAlgebra.norm
 
     using MiniQhull
 
     export AlphaShape, AlphaShapeVolume
 
+    const EQUAL_TOLERANCE = 6 #... decimal places, switching from Qhull to julia can lead to rounding errors
+
+    #= e.g julia gave Qhull the point
+
+    3-element Array{Float64,1}:
+     1.2246467991473532e-16
+     1.9999999999999998
+     2.0000000000000004
+
+    and this point in Qhulls triangulation became
+
+    3-element Array{Float64,1}:
+     -1.2246467991473532e-16
+      2.0
+      1.9999999999999998
+
+    =#
     """
         CayleyMenger
 
@@ -46,10 +66,13 @@ julia>:([0    1      1      1
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
     function SimplexVolume(points::Array{Float64,2})::Float64
-
-        CM = CayleyMenger(points)
-        n = size(CM,1)-2
-        return sqrt(((-1.0)^(n+1))/((2.0^n)*factorial(n)^2.0)*det(CM))
+        try
+            CM = CayleyMenger(points)
+            n = size(CM,1)-2
+            return sqrt(((-1.0)^(n+1))/((2.0^n)*factorial(n)^2.0)*det(CM))
+        catch e
+            return 0.0
+        end
     end
 
     """
@@ -69,36 +92,47 @@ julia>:([0    1      1      1
     end
 
     """
-        SimplexCircumSphere
+        SimplexCircumRadiusSquared
 
-    Find the centre and radius of the circumsphere of a simplex
+    Finds the squared cirum radius of a simplex
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
     function SimplexCircumRadiusSquared(points::Array{Float64,2})::Float64
         CM = CayleyMenger(points)
-        cminv = inv(CM)
-        return cminv[1,1]/(-2.0)
-    end
-
-    function VertexInTriangle(x::Array{Float64,1},T::Array{Float64,2})::Bool
-        if x == T[1,:] || x == T[2,:] || x == T[3,:]
-            return true
-        else
-            return false
+        try
+            cminv = inv(CM)
+            return cminv[1,1]/(-2.0)
+        catch e
+            return Inf # Inf will be rejected by the alpha shape
         end
     end
-    function VertexInTriangulation(x::Array{Float64,1},T::Array{Float64,3})::Bool
+
+    function VertexInSimplex(x::Array{Float64,1},T::Array{Float64,2})::Bool
         for i in 1:size(T,1)
-            if VertexInTriangle(x,T[i,:,:])
+            if x == T[i,:]
                 return true
             end
         end
         return false
     end
-    function AllPointsInAlphaShape(X::Array{Float64,2},A::Array{Float64,3})::Bool
+    function VertexInTriangulation(x::Array{Float64,1},T::Array{Float64,3})::Bool
+        for i in 1:size(T,1)
+            if VertexInSimplex(x,T[i,:,:])
+                return true
+            end
+        end
+        return false
+    end
+    function AllPointsInAlphaShape(X::Array{Float64,2},A::Array{Float64,3},leak=1)::Bool
+        x = round.(X,digits=EQUAL_TOLERANCE)
+        a = round.(A,digits=EQUAL_TOLERANCE)
+        n = 0
         for i in 1:size(X,1)
-            if VertexInTriangulation(X[i,:],A) == false
-                return false
+            if VertexInTriangulation(x[i,:],a) == false
+                n += 1
+                if n >= leak
+                    return false
+                end
             end
         end
         return true
@@ -144,11 +178,11 @@ julia>:([0    1      1      1
     """
     function FindAlpha(X::Array{Float64,2};
         search::Tuple{Float64,Float64}=(0.0, 10.0),
-        MaxSteps::Int=100)::Float64
+        MaxSteps::Int=100,AllPoints::Bool=true,leak::Int64=0)::Float64
         objective = function(α)
             α = α[1]
             A = AlphaShape(X,α=α);
-            t = AllPointsInAlphaShape(X,A)
+            t = AllPoints ? AllPointsInAlphaShape(X,A,leak) : true
             o =  AlphaShapeVolume(A)
             # minimise the area but if not all points are
             # included then set to extreme value
@@ -158,7 +192,11 @@ julia>:([0    1      1      1
                 return Inf
             end
         end
-        res = bboptimize(objective; SearchRange = search, NumDimensions = 1,MaxSteps=MaxSteps);
+        res = bboptimize(objective;
+            SearchRange = search,
+            NumDimensions = 1,
+            MaxSteps=MaxSteps,
+            Workers=workers());
         return best_candidate(res)[1]
     end
 
@@ -168,7 +206,7 @@ julia>:([0    1      1      1
             MaxSteps::Int=100)::Array{Float64,3}
 
     Find the alpha shape corresponding to the 2D array of points
-    X: [npoints,2], and the α value α.
+    X: [npoints,dimension], and the α value α.
 
     If α == nothing then a search over the range of values search is done
     to find the best value. The optimisation objective is the alpha shape
@@ -177,14 +215,17 @@ julia>:([0    1      1      1
     """
     function AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
         search::Tuple{Float64,Float64}=(0.0, 10.0),
-        MaxSteps::Int=100)::Array{Float64,3}
+        MaxSteps::Int=100,AllPoints::Bool=true,leak::Int64=0)::Array{Float64,3}
         T = GetDelaunayTriangulation(X)
         if α == nothing
             println("Finding the optimum α value...\n")
-            α = FindAlpha(X;search=search,MaxSteps=MaxSteps)
+            α = FindAlpha(X;search=search,MaxSteps=MaxSteps,AllPoints=AllPoints,leak=leak)
         end
         α2 = α^2.0
         A = [SimplexCircumRadiusSquared(T[i,:,:]) < α2 for i in 1:size(T,1)]
         return T[A.==1,:,:]
     end
+
+    include("utils.jl")
+
 end # module AlphaShapes
