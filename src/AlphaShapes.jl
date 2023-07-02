@@ -168,7 +168,7 @@ julia>:([0    1      1      1
             MaxSteps::Int=100)::Array{Float64,3}
 
     Find the alpha shape corresponding to the 2D array of points
-    X: [npoints,2], and the α value α.
+    X: [2,npoints], and the α value α.
 
     If α == nothing then a search over the range of values search is done
     to find the best value. The optimisation objective is the alpha shape
