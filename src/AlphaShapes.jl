@@ -27,7 +27,7 @@ julia>:([0    1      1      1
 :([0 1 1 1; 1 0 d12 ^ 2 d13 ^ 2; 1 d21 ^ 2 0 d23 ^ 2; 1 d32 ^ 2 d32 ^ 2 0])
 ```
     """
-    function CayleyMenger(points::AbstractArray{Float64,2})::Array{Float64}
+    function CayleyMenger(points::AbstractArray{Float64,2})::AbstractArray{Float64}
         d = pairwise(Euclidean(),points,dims=2)
         n = size(points,2)
         CM = ones(n+1,n+1)
@@ -58,7 +58,7 @@ julia>:([0    1      1      1
     Find the centre and radius of the circumsphere of a simplex
     https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm
     """
-    function SimplexCircumSphere(points::Array{Float64,2})::Tuple{Array{Float64,1},Float64}
+    function SimplexCircumSphere(points::AbstractArray{Float64,2})::Tuple{AbstractArray{Float64,1},Float64}
         CM = CayleyMenger(points)
         cminv = inv(CM)
         R = sqrt(cminv[1,1]/(-2.0))
@@ -87,7 +87,7 @@ julia>:([0    1      1      1
             return false
         end
     end
-    function VertexInTriangulation(x::AbstractArray{Float64,1},T::Array{Float64,3})::Bool
+    function VertexInTriangulation(x::AbstractArray{Float64,1},T::AbstractArray{Float64,3})::Bool
         for i in 1:size(T,3)
             if VertexInTriangle(x,view(T, :,:,i))
                 return true
@@ -95,7 +95,7 @@ julia>:([0    1      1      1
         end
         return false
     end
-    function AllPointsInAlphaShape(X::Array{Float64,2},A::Array{Float64,3})::Bool
+    function AllPointsInAlphaShape(X::AbstractArray{Float64,2},A::AbstractArray{Float64,3})::Bool
         for i in 1:size(X,2)
             if VertexInTriangulation(view(X, :,i),A) == false
                 return false
@@ -105,11 +105,11 @@ julia>:([0    1      1      1
     end
 
     """
-        AlphaShapeVolume(A::Array{Float64,3})
+        AlphaShapeVolume(A::AbstractArray{Float64,3})
 
     return the sum of volumes of all simplices in the alpha shapes A
     """
-    function AlphaShapeVolume(A::Array{Float64,3})::Float64
+    function AlphaShapeVolume(A::AbstractArray{Float64,3})::Float64
         area = 0.0
         for t in 1:size(A,3)
             area += SimplexVolume(view(A, :,:,t))
@@ -118,12 +118,12 @@ julia>:([0    1      1      1
     end
 
     """
-        GetDelaunayTriangulation(points::Array{Float64,2})::Array{Float64,3}
+        GetDelaunayTriangulation(points::AbstractArray{Float64,2})::AbstractArray{Float64,3}
 
     Wrap MiniQhull.jl's delaunay to get a delaunay triangualation in any
     dimension
     """
-    function GetDelaunayTriangulation(points::Array{Float64,2})::Array{Float64,3}
+    function GetDelaunayTriangulation(points::AbstractArray{Float64,2})::AbstractArray{Float64,3}
         tess = delaunay(points)
         Triangles = zeros(size(tess,1)-1,size(tess,1),size(tess,2))
         for i in axes(tess, 1)
@@ -135,16 +135,16 @@ julia>:([0    1      1      1
     end
 
     """
-        FindAlpha(X::Array{Float64,2};
+        FindAlpha(X::AbstractArray{Float64,2};
             search::Tuple{Float64,Float64}=(0.0, 10.0),
             MaxSteps::Int=100)::Float64
 
     Use BlackBocOptim to find the optimal alpha value (volume minimiser which cotains all
     points from the input).
     """
-    function FindAlpha(X::Array{Float64,2};
+    function FindAlpha(X::AbstractArray{Float64,2};
         search::Tuple{Float64,Float64}=(0.0, 10.0),
-        MaxSteps::Int=100)::Float64
+        MaxSteps::Int=100, silent::Bool = false)::Float64
         objective = function(α)
             α = α[1]
             A = AlphaShape(X,α=α);
@@ -158,16 +158,21 @@ julia>:([0    1      1      1
                 return Inf
             end
         end
-        res = bboptimize(objective; SearchRange = search, NumDimensions = 1,MaxSteps=MaxSteps);
+        res = bboptimize(objective; 
+            SearchRange = search, 
+            NumDimensions = 1,
+            MaxSteps=MaxSteps,
+            TraceMode = silent ? :silent : :compact
+        );
         return best_candidate(res)[1]
     end
 
     """
-        AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
+        AlphaShape(X::AbstractArray{Float64,2};α::Union{Nothing,Float64}=nothing,
             search::Tuple{Float64,Float64}=(0.0, 10.0),
-            MaxSteps::Int=100)::Array{Float64,3}
+            MaxSteps::Int=100)::AbstractArray{Float64,3}
 
-    Find the alpha shape corresponding to the 2D array of points
+    Find the alpha shape corresponding to the 2D AbstractArray of points
     X: [2,npoints], and the α value α.
 
     If α == nothing then a search over the range of values search is done
@@ -175,13 +180,14 @@ julia>:([0    1      1      1
     area (minimise) subject to all points in X being included in the
     alpha shape triangulation.
     """
-    function AlphaShape(X::Array{Float64,2};α::Union{Nothing,Float64}=nothing,
+    function AlphaShape(X::AbstractArray{Float64,2};α::Union{Nothing,Float64}=nothing,
         search::Tuple{Float64,Float64}=(0.0, 10.0),
-        MaxSteps::Int=100)::Array{Float64,3}
+        MaxSteps::Int=100,
+        silent::Bool=false)::AbstractArray{Float64,3}
         T = GetDelaunayTriangulation(X)
         if α == nothing
-            println("Finding the optimum α value...\n")
-            α = FindAlpha(X;search=search,MaxSteps=MaxSteps)
+            if (!silent) println("Finding the optimum α value...\n") end
+            α = FindAlpha(X;search=search,MaxSteps=MaxSteps,silent=silent)
         end
         α2 = α^2.0
         A = falses(size(T, 3))
