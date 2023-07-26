@@ -11,7 +11,7 @@ AlphaShape is a function which returns the alpha shape from a set of N dimension
 ```julia
 AlphaShape(X;α=nothing,search=(0.0, 10.0),MaxSteps=100)
 ```
-Returns a list of triangles (3 by N+1) arrays with vertices addressed by [v,:].
+Returns a list of triangles (N+1 by 3) arrays with vertices addressed by [:, v].
 
 Search is a tuple passed to the optimiser as the range of alpha values to search, whilst MaxSteps is the soft maximum
 number of steps the optimiser takes (may take many more if each iteration is very quick)
@@ -23,7 +23,7 @@ AlphaShapeArea(A)
 Computes the area of the alpha shape from the triangulation returned from AlphaShape
 ### Usage:
 
-Given a set of N-D points, X ~ npoints by N, compute the alpha shape (by automatically optimising alpha) using 
+Given a set of N-D points, `X` ~ `X` by `npoints`, compute the alpha shape (by automatically optimising alpha) using 
 ```Julia
 A = AlphaShape(X)
 ```
