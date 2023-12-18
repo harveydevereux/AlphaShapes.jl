@@ -1,7 +1,9 @@
 name = "AlphaShapes"
 uuid = "23a43136-1936-4ec7-b2ed-3a5dbec7203f"
-authors = ["harveydevereux <harveydevereux@googlemail.com>"]
-version = "0.2.0"
+authors = ["harveydevereux <harveydevereux@googlemail.com>",
+	   "BenCurran98 <73566276+BenCurran98@users.noreply.github.com>",
+	   "itsdfish <itsdfish@gmail.com>"]
+version = "0.3.0"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
