@@ -1,7 +1,7 @@
 module AlphaShapes
     import BlackBoxOptim.bboptimize, BlackBoxOptim.best_candidate
     import Distances.pairwise, Distances.Euclidean
-    import LinearAlgebra.det, LinearAlgebra.inv
+    import LinearAlgebra.det, LinearAlgebra.inv, LinearAlgebra.norm
 
     using MiniQhull
 
@@ -123,7 +123,7 @@ julia>:([0    1      1      1
     Wrap MiniQhull.jl's delaunay to get a delaunay triangualation in any
     dimension
     """
-    function GetDelaunayTriangulation(points::AbstractArray{Float64,2})::AbstractArray{Float64,3}
+    function GetDelaunayTriangulation(points::AbstractArray{Float64,2}, indices::Bool=false)
         tess = delaunay(points)
         Triangles = zeros(size(tess,1)-1,size(tess,1),size(tess,2))
         for i in axes(tess, 1)
@@ -131,7 +131,7 @@ julia>:([0    1      1      1
                 view(Triangles, :, i, j) .= view(points, :, tess[i, j])
             end
         end
-        return Triangles
+        return indices ? (Triangles, tess) : Triangles
     end
 
     """
@@ -198,4 +198,7 @@ julia>:([0    1      1      1
         end
         return T[:,:,A]
     end
+
+	include("utils.jl")
+	include("density.jl")
 end # module AlphaShapes
