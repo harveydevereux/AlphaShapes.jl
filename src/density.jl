@@ -57,6 +57,16 @@ end
 
 PointWeights(triangle::Array{Float64,2})::Array{Float64,1} =  TriangleAngles(triangle) ./ 2π
 
+"""
+    WeightedDTFELocalDensity(point_index::Int,tess,tess_inds)
+
+Return the local desnity at a point in the Weighted Delaunay Tesselation Field
+Estimator sense. This additionally normalises by the 'contribution' of individual
+points (portion of 2pi rad. in triangle)
+
+ https://royalsocietypublishing.org/doi/10.1098/rsif.2021.0114
+"""
+
 function WeightedDTFELocalDensity(point_index::Int,tess,tess_inds)::Float64
     tris,pos = ContiguousVoronoiCell(point_index,tess,tess_inds)
     A = zeros(size(tris,1))

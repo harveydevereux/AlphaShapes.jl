@@ -2,7 +2,8 @@ using Test
 my_tests = [
   "test_circum_sphere.jl",
   "test_simplex_volume.jl",
-  "test_alpha_shape.jl"
+  "test_alpha_shape.jl",
+  "test_density.jl"
 ]
 
 println("Running tests:")
